@@ -27,16 +27,28 @@ circle {
 .abstencion {fill:#cac88d;}
 .none {fill:#fff;}
 
+#tooltip { position: absolute; top: 0; left: 0; border: 1px solid #ccc; border-radius: 4px; padding: 4px; text-align: center;}
 </style>
 </head>
 <body>
 <h3></h3>
 <div id="chart"></div>
+<div id="tooltip"></div>
 
+<script id="tooltip_persona" type="text/x-handlebars-template">
+  <h2>{{nombre}}</h2>
+  <img src="http://votaciones.lanacion.com.ar/{{photo}}">
+  <p>Agrupacion: {{agrupacion}}</p>
+  <p>Voto: {{voto}}</p>
+</script>
 
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script>
+<!-- <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.min.js"></script>
 <script type="text/javascript">
 
+var tpl_tooltip_persona,
+    tooltip;
 
 var margin = {top: 250, right: 380, bottom: 250, left: 380},
     radius = Math.min(margin.top, margin.right, margin.bottom, margin.left) - 10;
@@ -66,9 +78,13 @@ var arc = d3.svg.arc()
 
 
 
-// buscar data
+// load data
 d3.json('votacion.json', function(d){
-	var votos = {
+	
+  tpl_tooltip_persona = Handlebars.compile(d3.select("#tooltip_persona").html());
+  tooltip = d3.select("#tooltip");
+  
+  var votos = {
 		name: d.mediatico,
 		voto:"none",
 		children:[]
@@ -128,7 +144,9 @@ var drag = function(root){
       .attr("class", function(d){return get_class(d)})
       /*.style("fill", function(d) { return d.fill; })*/
       .each(function(d) { this._current = updateArc(d); })
-      .on("click", zoomIn);
+      .on("click", zoomIn)
+      .on("mouseover", fn_mouseover)
+      ;
 
   function zoomIn(p) {
     if (p.depth > 1) p = p.parent;
@@ -200,6 +218,7 @@ var drag = function(root){
           /*.style("fill", function(d) { return d.fill; })*/
           .attr("class", function(d){return get_class(d)})
           .on("click", zoomIn)
+          .on("mouseover", fn_mouseover)
           .each(function(d) { this._current = enterArc(d); });
 
       path.transition()
@@ -263,6 +282,16 @@ var get_class = function(d){
   }
   return name.replace(/\s|\.|\+|[áéíóú]/gi, "");
 };
+
+
+var fn_mouseover = function(d){
+        if(d.nombre){
+          var _html = tpl_tooltip_persona(d);
+          tooltip.html(_html);
+        }
+      }
 </script>
+
+
 </body>
 </html>
