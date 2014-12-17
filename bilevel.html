@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Grafico Votaciones 2014</title>
+	<meta charset="utf-8">
+<style>
+
+#filtros_aplicados { float: left;}
+#chart { display: inline-block; float: left;}
+circle,
+path {
+  cursor: pointer;
+}
+
+circle {
+  fill: none;
+  pointer-events: all;
+}
+.Kirchnerismoyaliados {fill:#007caf} 
+.Massismoyaliados {fill:#5faecd}
+.Peronismonokirchnerista {fill:#f6a619} 
+.Proyaliados {fill:#fbd95b}
+.UNEN-FAP-UCR {fill:#8eab35} 
+.Izquierda {fill:#e00025}
+.Otros {fill:#d9d5b8}
+.afirmativo {fill:#81bc90;}
+.negativo {fill:#fb7373;}
+.ausente {fill:#6ba6b8;}
+.abstencion {fill:#cac88d;}
+.none {fill:#fff;}
+
+.color_afirmativo {color: #81bc90;}
+.color_negativo {color: #fb7373;}
+.color_abstencion {color: #cac88d;}
+.color_ausente {color: #6ba6b8;}
+
+.bg_afirmativo {background: #81bc90;}
+.bg_negativo {background: #fb7373;}
+.bg_abstencion {background: #cac88d;}
+.bg_ausente {background: #6ba6b8;}
+
+/* orientaciones style | los que terminan en 2 son para las tipografias*/
+.Kirchnerismoyaliados, .kaas {background:#007caf} .Kirchnerismoyaliados_color, .kaas2 {color:#007caf}
+.Massismoyaliados, .mass {background:#5faecd} .Massismoyaliados_color, .mass2 {color:#5faecd}
+.Peronismonokirchnerista, .peron {background:#f6a619} .Peronismonokirchnerista_color, .peron2 {color:#f6a619}
+.Proyaliados, .pro {background:#fbd95b} .Proyaliados_color, .pro2 {color:#fbd95b}
+.UNEN-FAP-UCR, .unen {background:#8eab35} .UNEN-FAP-UCR_color, .unen2 {color:#8eab35}
+.Izquierda, .izq {background:#e00025} .Izquierda_color, .izq2 {color:#e00025}
+.Otros, .otros {background:#d9d5b8} .Otros_color, .otros2 {color:#d9d5b8}
+
+
+#tooltip { position: absolute; top: 100px; left: 0; border: 3px solid #333; border-radius: 4px; padding: 4px; /*text-align: left;*/ background: rgba(255, 255, 255, .7); padding: 5px; display: inline-block;}
+#tooltip img { float: left; margin: 0 5px 0 0; border-radius: 4px; width: 60px;}
+#tooltip .desc { float: left; }
+#tooltip h3 { clear: both; margin: 0 0 5px;}
+</style>
+</head>
+<body>
+<div id="chart"></div>
+<div id="filtros_aplicados"> 
+  <h2>Filtros aplicados:</h2>
+  <ul></ul>
+</div>
+<div id="tooltip"></div>
+<script id="tooltip_persona" type="text/x-handlebars-template">
+  <h3>{{nombre}}</h3>
+  <img src="http://votaciones.lanacion.com.ar/{{photo}}">
+  <div class="desc">
+    <p class="{{get_id_class agrupacion}}_color">{{agrupacion}}</p>
+    <p class="color_{{lower voto}}">{{voto}}</p>
+  </div>
+</script>
+
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script>
+<!-- <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.min.js"></script>
+<script type="text/javascript" src="scripts.js"></script>
+<script type="text/javascript">
+
+"use strict";
+
+var tpl_tooltip_persona;
+
+var margin = {top: 250, right: 300, bottom: 250, left: 300},
+    radius = Math.min(margin.top, margin.right, margin.bottom, margin.left) - 10;
+
+var hue = d3.scale.category10();
+
+var luminance = d3.scale.sqrt()
+    .domain([0, 1e6])
+    .clamp(true)
+    .range([90, 20]);
+
+var svg = d3.select("#chart").append("svg")
+    .attr("width", margin.left + margin.right)
+    .attr("height", margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+var partition = d3.layout.partition()
+    .sort(function(a, b) { return d3.ascending(a.name, b.name); })
+    .size([2 * Math.PI, radius]);
+
+var arc = d3.svg.arc()
+    .startAngle(function(d) { return d.x; })
+    .endAngle(function(d) { return d.x + d.dx - .01 / (d.depth + .5); })
+    .innerRadius(function(d) { return radius / 3 * d.depth; })
+    .outerRadius(function(d) { return radius / 3 * (d.depth + 1) - 1; });
+
+
+
+// load data
+
+var drag = function(root){
+  tpl_tooltip_persona = Handlebars.compile(d3.select("#tooltip_persona").html());
+  // tooltip = d3.select("#tooltip");
+// Compute the initial layout on the entire tree to sum sizes.
+  // Also compute the full name and fill color for each node,
+  // and stash the children so they can be restored as we descend.
+  partition
+      .value(function(d) { return 1; })
+      .nodes(root)
+      .forEach(function(d) {
+        d._children = d.children;
+        d.sum = d.value;
+        d.key = key(d);
+        d.fill = fill(d);
+      });
+
+  // Now redefine the value function to use the previously-computed sum.
+  partition
+      .children(function(d, depth) { return depth < 2 ? d._children : null; })
+      .value(function(d) { return d.sum; });
+
+  var center = svg.append("circle")
+      .attr("r", radius / 3)
+      .on("click", zoomOut);
+
+  center.append("title")
+      .text("zoom out");
+
+  var path = svg.selectAll("path")
+      .data(partition.nodes(root).slice(1))
+    .enter().append("path")
+      .attr("d", arc)
+      .attr("class", function(d){return get_class(d)})
+      /*.style("fill", function(d) { return d.fill; })*/
+      .each(function(d) { this._current = updateArc(d); })
+      .on("click", zoomIn)
+      .on("mouseover", Tooltip.show_tp)
+      .on("mouseout", Tooltip.hide_tp)
+      ;
+
+  function zoomIn(p) {
+    if (p.depth > 1) p = p.parent;
+    if (!p.children) return;
+    zoom(p, p);
+  
+  }
+
+  function zoomOut(p) {
+    if (!p.parent) return;
+    zoom(p.parent, p);
+  }
+
+  // Zoom to the specified new root.
+  function zoom(root, p) {
+  	
+  	var t = "";
+  	if(root.parent){
+	  	t += root.parent.parent ? " <li> " + root.parent.parent.name + "</li>" : "";
+	  	t += root.parent ? "<li>" +  root.parent.name + "</li>" : "";
+  	}else{
+    	/*center.style("fill", "#fff")*/
+  		
+  	}
+	
+	center.attr("class", root.voto)
+  	t += "<li>" + root.name + "</li>";
+    d3.select("#filtros_aplicados ul").html(t);
+    
+
+    if (document.documentElement.__transition__) return;
+
+    // Rescale outside angles to match the new layout.
+    var enterArc,
+        exitArc,
+        outsideAngle = d3.scale.linear().domain([0, 2 * Math.PI]);
+
+    function insideArc(d) {
+      return p.key > d.key
+          ? {depth: d.depth - 1, x: 0, dx: 0} : p.key < d.key
+          ? {depth: d.depth - 1, x: 2 * Math.PI, dx: 0}
+          : {depth: 0, x: 0, dx: 2 * Math.PI};
+    }
+
+    function outsideArc(d) {
+      return {depth: d.depth + 1, x: outsideAngle(d.x), dx: outsideAngle(d.x + d.dx) - outsideAngle(d.x)};
+    }
+
+    center.datum(root);
+
+    // When zooming in, arcs enter from the outside and exit to the inside.
+    // Entering outside arcs start from the old layout.
+    if (root === p) enterArc = outsideArc, exitArc = insideArc, outsideAngle.range([p.x, p.x + p.dx]);
+
+    path = path.data(partition.nodes(root).slice(1), function(d) { return d.key; });
+
+    // When zooming out, arcs enter from the inside and exit to the outside.
+    // Exiting outside arcs transition to the new layout.
+    if (root !== p) enterArc = insideArc, exitArc = outsideArc, outsideAngle.range([p.x, p.x + p.dx]);
+
+    d3.transition().duration(d3.event.altKey ? 7500 : 750).each(function() {
+      path.exit().transition()
+          .style("fill-opacity", function(d) { return d.depth === 1 + (root === p) ? 1 : 0; })
+          .attrTween("d", function(d) { return arcTween.call(this, exitArc(d)); })
+          .remove();
+
+      path.enter().append("path")
+          .style("fill-opacity", function(d) { return d.depth === 2 - (root === p) ? 1 : 0; })
+          /*.style("fill", function(d) { return d.fill; })*/
+          .attr("class", function(d){return get_class(d)})
+          .on("click", zoomIn)
+          .on("mouseover", Tooltip.show_tp)
+          .on("mouseout", Tooltip.hide_tp)
+          .each(function(d) { this._current = enterArc(d); });
+
+      path.transition()
+          .style("fill-opacity", 1)
+          .attrTween("d", function(d) { return arcTween.call(this, updateArc(d)); });
+    });
+  }
+};
+
+
+function key(d) {
+  var k = [], p = d;
+  while (p.depth) k.push(p.name), p = p.parent;
+  return k.reverse().join(".");
+}
+
+function fill(d) {
+  var p = d;
+  while (p.depth > 1) p = p.parent;
+  var c = d3.lab(hue(p.name));
+  c.l = luminance(d.sum);
+  return c;
+}
+
+function arcTween(b) {
+  var i = d3.interpolate(this._current, b);
+  this._current = i(0);
+  return function(t) {
+    return arc(i(t));
+  };
+}
+
+function updateArc(d) {
+  return {depth: d.depth, x: d.x, dx: d.dx};
+  return {classepth: d.depth, x: d.x, dx: d.dx};
+}
+
+d3.select(self.frameElement).style("height", margin.top + margin.bottom + "px");
+
+
+build_data(drag); // run app
+
+</script>
+
+
+</body>
+</html>
