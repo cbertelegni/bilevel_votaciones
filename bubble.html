@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Grafico Votaciones 2014</title>
+  <meta charset="utf-8">
+<style>
+
+#filtros_aplicados { float: left;}
+#chart { display: inline-block; float: left;}
+circle,
+path {
+  cursor: pointer;
+}
+
+circle {
+  fill: none;
+  pointer-events: all;
+}
+.Kirchnerismoyaliados {fill:#007caf} 
+.Massismoyaliados {fill:#5faecd}
+.Peronismonokirchnerista {fill:#f6a619} 
+.Proyaliados {fill:#fbd95b}
+.UNEN-FAP-UCR {fill:#8eab35} 
+.Izquierda {fill:#e00025}
+.Otros {fill:#d9d5b8}
+.afirmativo {fill:#81bc90;}
+.negativo {fill:#fb7373;}
+.ausente {fill:#6ba6b8;}
+.abstencion {fill:#cac88d;}
+.none {fill:#fff;}
+
+.color_afirmativo {color: #81bc90;}
+.color_negativo {color: #fb7373;}
+.color_abstencion {color: #cac88d;}
+.color_ausente {color: #6ba6b8;}
+
+.bg_afirmativo {background: #81bc90;}
+.bg_negativo {background: #fb7373;}
+.bg_abstencion {background: #cac88d;}
+.bg_ausente {background: #6ba6b8;}
+
+/* orientaciones style | los que terminan en 2 son para las tipografias*/
+.Kirchnerismoyaliados, .kaas {background:#007caf} .Kirchnerismoyaliados_color, .kaas2 {color:#007caf}
+.Massismoyaliados, .mass {background:#5faecd} .Massismoyaliados_color, .mass2 {color:#5faecd}
+.Peronismonokirchnerista, .peron {background:#f6a619} .Peronismonokirchnerista_color, .peron2 {color:#f6a619}
+.Proyaliados, .pro {background:#fbd95b} .Proyaliados_color, .pro2 {color:#fbd95b}
+.UNEN-FAP-UCR, .unen {background:#8eab35} .UNEN-FAP-UCR_color, .unen2 {color:#8eab35}
+.Izquierda, .izq {background:#e00025} .Izquierda_color, .izq2 {color:#e00025}
+.Otros, .otros {background:#d9d5b8} .Otros_color, .otros2 {color:#d9d5b8}
+
+
+#tooltip { position: absolute; top: 100px; left: 0; border: 3px solid #333; border-radius: 4px; padding: 4px; /*text-align: left;*/ background: rgba(255, 255, 255, .7); padding: 5px; display: inline-block;}
+#tooltip img { float: left; margin: 0 5px 0 0; border-radius: 4px; width: 60px;}
+#tooltip .desc { float: left; }
+#tooltip h3 { clear: both; margin: 0 0 5px;}
+</style>
+</head>
+<body>
+<div id="chart"></div>
+<div id="filtros_aplicados"> 
+  <h2>Filtros aplicados:</h2>
+  <ul></ul>
+</div>
+<div id="tooltip"></div>
+<script id="tooltip_persona" type="text/x-handlebars-template">
+  <h3>{{nombre}}</h3>
+  <img src="http://votaciones.lanacion.com.ar/{{photo}}">
+  <div class="desc">
+    <p class="{{get_id_class agrupacion}}_color">{{agrupacion}}</p>
+    <p class="color_{{lower voto}}">{{voto}}</p>
+  </div>
+</script>
+
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script>
+<!-- <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.min.js"></script>
+<script type="text/javascript" src="scripts.js"></script>
+<script type="text/javascript">
+// text in svg
+// https://github.com/mbostock/d3/issues/60#issuecomment-856549
+"use strict";
+
+var tpl_tooltip_persona;
+
+var diameter = 640,
+    format = d3.format(",d"),
+    color = d3.scale.category20c();
+
+var bubble = d3.layout.pack()
+    .sort(null)
+    .size([diameter, diameter])
+    .padding(1.5);
+
+var svg = d3.select("body").append("svg")
+    .attr("width", diameter)
+    .attr("height", diameter)
+    .attr("class", "bubble");
+
+function drag(root) {
+  var node = svg.selectAll(".node")
+      .data(bubble.nodes(classes(root))
+      .filter(function(d) { return !d.children; }))
+    .enter().append("g")
+      .attr("class", "node")
+      .attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+
+  node.append("title")
+      .text(function(d) { return d.className + ": " + format(d.value); });
+
+  node.append("circle")
+      .attr("r", function(d) { return d.r; })
+      // .style("fill", function(d) { return color(d.packageName); });
+      // .attr("class", function(d){return get_class(d)});
+      .attr("class", function(d){return d.packageName});
+  node.append("text")
+      .attr("dy", "-1em")
+      .style("text-anchor", "middle")
+      .text(function(d) { return d.packageName; })
+      // .text(function(d) { return d.className.substring(0, d.r / 3); });
+  node.append("text")
+      .attr("dy", ".3em")
+      .style("text-anchor", "middle")
+      // .text(function(d) { return d.packageName; })
+      .text(function(d) { return d.className.substring(0, d.r / 3); });
+  node.append("text")
+      .attr("dy", "1.3em")
+      .style("text-anchor", "middle")
+      // .text(function(d) { return d.packageName; })
+      .text(function(d) { return d.value + " votos"; });
+};
+
+// Returns a flattened hierarchy containing all leaf nodes under the root.
+function classes(root) {
+  var classes = [];
+
+  function recurse(name, node) {
+    if (node.children) node.children.forEach(function(child) { recurse(node.name, child); });
+    else classes.push({packageName: name, className: node.name, value: node.size});
+  }
+
+  recurse(null, root);
+  return {children: classes};
+}
+
+d3.select(self.frameElement).style("height", diameter + "px");
+
+
+var sin_personas = true;
+build_data(drag, sin_personas); // run app
+
+</script>
+
+
+</body>
+</html>

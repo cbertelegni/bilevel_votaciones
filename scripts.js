@@ -1,6 +1,6 @@
 // helpers
 
-var build_data = function(callback){
+var build_data = function(callback, sin_personas){
   
   "use strict";
 
@@ -38,12 +38,16 @@ var build_data = function(callback){
       }
       var agrup = nested_data(tipo_voto[v], "agrupacion");
       for(var a in agrup){ // cada agr
-        agrupaciones.children.push({
+        var ag = {
                   name: a,
                   voto:v.toLowerCase(),
-                  children: agrup[a].map(function(j){ j.size = 1; return j;}),
+                  // children: agrup[a].map(function(j){ j.size = 1; return j;}),
                   size: agrup[a].length
-                });
+                };
+        if(!sin_personas){
+          ag.children= agrup[a].map(function(j){ j.size = 1; return j;});
+        }       
+        agrupaciones.children.push(ag);
       }
       votos.children.push(agrupaciones);
     }
@@ -58,7 +62,7 @@ var build_data = function(callback){
 
 
 var get_class = function(d){
-  
+  console.log(d)
   if(d._children){
     var name = d.name;
   }else{
