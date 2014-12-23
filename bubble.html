@@ -3,10 +3,12 @@
 <head>
   <title>Grafico Votaciones 2014</title>
   <meta charset="utf-8">
+  <link rel="stylesheet" type="text/css" href="css/styles.css">
 <style>
 
-#filtros_aplicados { float: left;}
-#chart { display: inline-block; float: left;}
+/*#filtros_aplicados { float: left;}
+*/
+#chart { text-align: center;}
 circle,
 path {
   cursor: pointer;
@@ -16,49 +18,12 @@ circle {
   fill: none;
   pointer-events: all;
 }
-.Kirchnerismoyaliados {fill:#007caf} 
-.Massismoyaliados {fill:#5faecd}
-.Peronismonokirchnerista {fill:#f6a619} 
-.Proyaliados {fill:#fbd95b}
-.UNEN-FAP-UCR {fill:#8eab35} 
-.Izquierda {fill:#e00025}
-.Otros {fill:#d9d5b8}
-.afirmativo {fill:#81bc90;}
-.negativo {fill:#fb7373;}
-.ausente {fill:#6ba6b8;}
-.abstencion {fill:#cac88d;}
-.none {fill:#fff;}
-
-.color_afirmativo {color: #81bc90;}
-.color_negativo {color: #fb7373;}
-.color_abstencion {color: #cac88d;}
-.color_ausente {color: #6ba6b8;}
-
-.bg_afirmativo {background: #81bc90;}
-.bg_negativo {background: #fb7373;}
-.bg_abstencion {background: #cac88d;}
-.bg_ausente {background: #6ba6b8;}
-
-/* orientaciones style | los que terminan en 2 son para las tipografias*/
-.Kirchnerismoyaliados, .kaas {background:#007caf} .Kirchnerismoyaliados_color, .kaas2 {color:#007caf}
-.Massismoyaliados, .mass {background:#5faecd} .Massismoyaliados_color, .mass2 {color:#5faecd}
-.Peronismonokirchnerista, .peron {background:#f6a619} .Peronismonokirchnerista_color, .peron2 {color:#f6a619}
-.Proyaliados, .pro {background:#fbd95b} .Proyaliados_color, .pro2 {color:#fbd95b}
-.UNEN-FAP-UCR, .unen {background:#8eab35} .UNEN-FAP-UCR_color, .unen2 {color:#8eab35}
-.Izquierda, .izq {background:#e00025} .Izquierda_color, .izq2 {color:#e00025}
-.Otros, .otros {background:#d9d5b8} .Otros_color, .otros2 {color:#d9d5b8}
-
-
-#tooltip { position: absolute; top: 100px; left: 0; border: 3px solid #333; border-radius: 4px; padding: 4px; /*text-align: left;*/ background: rgba(255, 255, 255, .7); padding: 5px; display: inline-block;}
-#tooltip img { float: left; margin: 0 5px 0 0; border-radius: 4px; width: 60px;}
-#tooltip .desc { float: left; }
-#tooltip h3 { clear: both; margin: 0 0 5px;}
 </style>
 </head>
 <body>
 <div id="chart"></div>
 <div id="filtros_aplicados"> 
-  <h2>Filtros aplicados:</h2>
+  <h2></h2>
   <ul></ul>
 </div>
 <div id="tooltip"></div>
@@ -74,7 +39,7 @@ circle {
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script>
 <!-- <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> -->
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.min.js"></script>
-<script type="text/javascript" src="scripts.js"></script>
+<script type="text/javascript" src="js/scripts.js"></script>
 <script type="text/javascript">
 // text in svg
 // https://github.com/mbostock/d3/issues/60#issuecomment-856549
@@ -91,7 +56,7 @@ var bubble = d3.layout.pack()
     .size([diameter, diameter])
     .padding(1.5);
 
-var svg = d3.select("body").append("svg")
+var svg = d3.select("body #chart").append("svg")
     .attr("width", diameter)
     .attr("height", diameter)
     .attr("class", "bubble");
